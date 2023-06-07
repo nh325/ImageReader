@@ -2,10 +2,10 @@ files = "sample.tif";
 
 % Read TIFF file
 stack = tiffreadVolume(files(1:length(files)));
-numSlices = size(stack, 3);
+numChan = size(stack, 3); % number of channels
 
-% Select the THG channel
-ch1 = stack(:, :, 1:3:numSlices-2);
+% Select channel (uses 1st out of 3)
+ch1 = stack(:, :, 1:3:numChan-2);
 
 % Specify the slice number
 m = 21;
