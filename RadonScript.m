@@ -22,6 +22,9 @@ center = roi.Center;
 radius = roi.Radius;
 roiMask = createMask(roi); % Get the binary mask of the ROI
 
+% Save the ROI
+imwrite(uint8(roiImage), 'roi_image.png');
+
 % Apply ROI mask
 maskedFrame = frame .* roiMask;
 
@@ -44,6 +47,7 @@ colorbar;
 xlabel('Theta (degrees)');
 ylabel('Radon Transform Parameter');
 title('Radon Transform');
+saveas(gcf, 'radon_transform.png');
 
 % Calculate standard deviation per column
 stdDev = std(R);
@@ -51,6 +55,7 @@ stdDev = std(R);
 % Display standard deviation magnitude per column
 figure;
 plot(stdDev);
-xlabel('Column');
+xlabel('Theta');
 ylabel('Standard Deviation');
-title('Standard Deviation Magnitude per Column');
+title('Standard Deviation Magnitude per Theta');
+saveas(gcf, 'std_deviation.png');
