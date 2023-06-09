@@ -1,4 +1,26 @@
+%INPUTS
+
+% FILE PATH
 files = "sample.tif";
+
+% SET ROI MOVEMENT STEP SIZE 
+stepSize = 100;
+
+% SET INITAL XY VALUES
+initialX = 200;
+initialY = 200;
+
+%SET RADIUS OF ROI
+radius = 100;
+
+% SET NUMBER OF SLICES TO SKIP
+skipSlices = 50;
+
+% AREA RESITRICTION FROM LEFT AND BOTTOM EDGE
+buffer = 100;
+
+
+%CODE
 
 % Read TIFF file
 stack = tiffreadVolume(files);
@@ -28,9 +50,6 @@ findFWHM = @(stdDev) find(stdDev > max(stdDev) / 2, 1, 'last') - find(stdDev > m
 % Function to analyze the curve
 analyzeCurveFunction = @(stdDev) [findFWHM(stdDev), max(stdDev), trapz(stdDev)];
 
-% SET NUMBER OF SLICES TO SKIP 
-skipSlices = 50; %CHANGE
-
 % Determine the actual number of frames with available data
 actualNumFrames = ceil(numSlices / 3 / skipSlices);
 
@@ -41,15 +60,14 @@ results = struct('Width', {}, 'Height', {}, 'Area', {});
 for m = 1:skipSlices:numFrames
     disp(m)
     
-    % SELECT CHANNEL
+    % Select the THG channel
     ch1 = stack(:, :, 1:3:numSlices-2);
     
     frame = double(ch1(:, :, m));
     
-    % SET INITIAL POSITION
-    initialX = 200; %CHANGE
+    % Set the initial position
     centerX = initialX;
-    centerY = 200; %CHANAGE
+    centerY = initialY;
     
     % Initialize arrays to store ROI-specific analysis results
     roiWidths = {};
@@ -57,15 +75,15 @@ for m = 1:skipSlices:numFrames
     roiAreas = {};
     
     % Iterate over y-direction
-    while centerY + 100 <= size(frame, 1) - 100 %CHANGE STEP SIZE
+    while centerY + radius <= size(frame, 1) - buffer
         % Iterate over x-direction
-        while centerX + 100 <= size(frame, 2) - 100
+        while centerX + radius <= size(frame, 2) - buffer
             % Display the image
             figure;
             imshow(frame, []);
             
             % Create the ROI object
-            roi = drawROI(frame, centerX, centerY, 100);
+            roi = drawROI(frame, centerX, centerY, radius);
             
             % Save the image with ROI outline
             filename = sprintf('image_with_roi_outline_slice%d_centerX%d_centerY%d.png', m, centerX, centerY);
@@ -117,13 +135,13 @@ for m = 1:skipSlices:numFrames
             % Close all figures
             close all;  
             % Move to the next x position
-            centerX = centerX + 100;
+            centerX = centerX + stepSize;
         end
         
         % Move back to the starting position for the next row
         centerX = initialX;
         % Move to the next y position
-        centerY = centerY + 100;
+        centerY = centerY + stepSize;
     end
     
     % Store the analysis results for the current frame
