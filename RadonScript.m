@@ -51,7 +51,7 @@ saveas(gcf, 'radon_transform.png');
 
 % Calculate standard deviation per column
 raw_stdDev = std(R);
-stdDev = (raw_stdDev - mean(raw_stdDev)) / std(raw_stdDev);
+stdDev = (raw_stdDev - min(raw_stdDev)) / (max(raw_stdDev)-min(raw_stdDev));
 
 % Display standard deviation magnitude per column
 figure;
