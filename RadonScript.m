@@ -50,7 +50,8 @@ title('Radon Transform');
 saveas(gcf, 'radon_transform.png');
 
 % Calculate standard deviation per column
-stdDev = std(R);
+raw_stdDev = std(R);
+stdDev = (raw_stdDev - mean(raw_stdDev)) / std(raw_stdDev);
 
 % Display standard deviation magnitude per column
 figure;
