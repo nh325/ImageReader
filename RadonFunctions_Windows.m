@@ -42,7 +42,7 @@ drawROI = @(frame, centerX, centerY, radius) drawcircle('Center', [centerX, cent
 performRadonTransform = @(maskedFrame) radon(maskedFrame, linspace(0, 180, 180));
 
 % Function to calculate normalized standard deviation
-calculateStdDev = @(R) (std(R) - mean(std(R))) / std(std(R));
+calculateStdDev = @(R) (std(R) - min(std(R))) / (max(std(R)-min(std(R))));
 
 % Function to find the full width at half maximum (FWHM)
 findFWHM = @(stdDev) find(stdDev > max(stdDev) / 2, 1, 'last') - find(stdDev > max(stdDev) / 2, 1) + 1;
