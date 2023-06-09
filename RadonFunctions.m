@@ -28,8 +28,8 @@ findFWHM = @(stdDev) find(stdDev > max(stdDev) / 2, 1, 'last') - find(stdDev > m
 % Function to analyze the curve
 analyzeCurveFunction = @(stdDev) [findFWHM(stdDev), max(stdDev), trapz(stdDev)];
 
-% Set the number of slices to skip
-skipSlices = 50;
+% SET NUMBER OF SLICES TO SKIP 
+skipSlices = 50; %CHANGE
 
 % Determine the actual number of frames with available data
 actualNumFrames = ceil(numSlices / 3 / skipSlices);
@@ -41,15 +41,15 @@ results = struct('Width', {}, 'Height', {}, 'Area', {});
 for m = 1:skipSlices:numFrames
     disp(m)
     
-    % Select the THG channel
+    % SELECT CHANNEL
     ch1 = stack(:, :, 1:3:numSlices-2);
     
     frame = double(ch1(:, :, m));
     
-    % Set the initial position to the top left corner
-    initialX = 200;
+    % SET INITIAL POSITION
+    initialX = 200; %CHANGE
     centerX = initialX;
-    centerY = 200;
+    centerY = 200; %CHANAGE
     
     % Initialize arrays to store ROI-specific analysis results
     roiWidths = {};
@@ -57,7 +57,7 @@ for m = 1:skipSlices:numFrames
     roiAreas = {};
     
     % Iterate over y-direction
-    while centerY + 100 <= size(frame, 1) - 100
+    while centerY + 100 <= size(frame, 1) - 100 %CHANGE STEP SIZE
         % Iterate over x-direction
         while centerX + 100 <= size(frame, 2) - 100
             % Display the image
