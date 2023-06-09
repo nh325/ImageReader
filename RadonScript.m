@@ -2,13 +2,13 @@ files = "sample.tif";
 
 % Read TIFF file
 stack = tiffreadVolume(files(1:length(files)));
-numChan = size(stack, 3); % number of channels
+numSlices = size(stack, 3); % number of channels
 
-% Select channel (uses 1st out of 3)
+% SELECT CHANNEL (uses 1st out of 3)
 ch1 = stack(:, :, 1:3:numChan-2);
 
-% Specify the slice number
-m = 21;
+% SPECIFY SLICE NUMBER
+m = 21; % CHANGE!
 if m > size(ch1, 3) % Make sure slice exists
     error('Invalid frame index.');
 end
