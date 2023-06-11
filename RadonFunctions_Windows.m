@@ -28,7 +28,7 @@ numSlices = size(stack, 3);
 numFrames = numSlices / 3;
 
 % Specify the folder name to save the images and figures
-folderName = 'analysis_results';
+folderName = 'radon_results';
 
 % Create the folder if it does not exist
 if ~exist(folderName, 'dir')
