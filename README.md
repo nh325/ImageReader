@@ -1,7 +1,7 @@
 # ImageReader
 
 # RadonScript: 
-- Upload a TIF file
+- Upload a TIFF file
 - Input appropriate channel and slice number
 - Draw circle ROI for Radon transform and std dev plot
 - Save to directory
@@ -16,7 +16,7 @@
 - Access data from RadonFunctions (width, height, area under std dev curve)
 
 # FFTScript
-- Upload TIF file
+- Upload TIFF file
 - Input appropriate channel and slice number
 - Perform FFT on each slice
 - Save to directory
