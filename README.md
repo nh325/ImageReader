@@ -1,4 +1,4 @@
-# Radon
+# ImageReader
 
 # RadonScript: 
 - Upload a TIF file
@@ -10,6 +10,13 @@
 - Has functions for subsections of RadonScript
 - Iterates over slices and automates ROI selection
 - Input ROI radius and movement steps
+- Save each Radon transform, std dev plot, saves data
 
 # loaddata:
 - Access data from RadonFunctions (width, height, area under std dev curve)
+
+#FFTScript
+- Upload TIF file
+- Input appropriate channel and slice number
+- Perform FFT on each slice
+- Save to directory
