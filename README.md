@@ -15,7 +15,7 @@
 # loaddata:
 - Access data from RadonFunctions (width, height, area under std dev curve)
 
-#FFTScript
+# FFTScript
 - Upload TIF file
 - Input appropriate channel and slice number
 - Perform FFT on each slice
