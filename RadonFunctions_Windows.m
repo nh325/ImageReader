@@ -1,5 +1,5 @@
 % FILE PATH
-files = "wk1.tif";
+files = "sample.tif";
 
 % SET ROI MOVEMENT STEP SIZE 
 stepSize = 100;
