@@ -1,5 +1,5 @@
 % FILE PATH
-files = "sample.tif";
+files = "wk1.tif";
 
 % SET ROI MOVEMENT STEP SIZE 
 stepSize = 100;
@@ -15,8 +15,8 @@ radius = 100;
 skipSlices = 50;
 
 % AREA RESITRICTION FROM LEFT AND BOTTOM EDGE
-buffer = 100;
-
+buffer_X = 100;
+buffer_Y = 200;
 
 % Read TIFF file
 stack = tiffreadVolume(files);
@@ -44,21 +44,22 @@ calculateStdDev = @(R) (std(R) - min(std(R))) / (max(std(R))-min(std(R)));
 findFWHM = @(stdDev) find(stdDev > max(stdDev) / 2, 1, 'last') - find(stdDev > max(stdDev) / 2, 1) + 1;
 
 % Function to analyze the curve
-analyzeCurveFunction = @(stdDev) [findFWHM(stdDev), max(stdDev), trapz(stdDev)];
+analyzeCurveFunction = @(stdDev) [findFWHM(stdDev), max(stdDev), trapz(stdDev), findPseudoFWHM(stdDev)];
 
 % Determine the actual number of frames with available data
 actualNumFrames = ceil(numSlices / 3 / skipSlices);
 
 % Calculate the maximum number of ROIs
-maxNumROIs = floor(((size(stack, 1) - buffer - initialY) / stepSize + 1) * ((size(stack, 2) - buffer - initialX) / stepSize + 1));
+maxNumROIs = floor(((size(stack, 1) - buffer_Y - initialY) / stepSize + 1) * ((size(stack, 2) - buffer_X - initialX) / stepSize + 1));
 
 % Preallocate arrays for ROI-specific analysis results
 roiWidths = cell(1, maxNumROIs);
 roiHeights = cell(1, maxNumROIs);
 roiAreas = cell(1, maxNumROIs);
+roiPseudoFWHM = cell(1, maxNumROIs);
 
 % Initialize structural arrays to store analysis results
-results = struct('Width', roiWidths, 'Height', roiHeights, 'Area', roiAreas);
+results = struct('Width', roiWidths, 'Height', roiHeights, 'Area', roiAreas, 'PseudoFWHM', roiPseudoFWHM);
 
 % Iterate over each frame
 for m = 1:skipSlices:numFrames
@@ -77,20 +78,20 @@ for m = 1:skipSlices:numFrames
     roiCounter = 0;
     
     % Iterate over y-direction
-    while centerY + radius <= size(frame, 1) - buffer
+    while centerY + radius <= size(frame, 1) - buffer_Y
         % Iterate over x-direction
-        while centerX + radius <= size(frame, 2) - buffer
-            % Display the image
+        while centerX + radius <= size(frame, 2) - buffer_X
+
             figure('Visible', 'off');
             imshow(frame, []);
-            
+       
             % Create the ROI object
             roi = drawROI(frame, centerX, centerY, radius);
-            
+
             % Save the image with ROI outline
             filename = sprintf('image_with_roi_outline_slice%d_centerX%d_centerY%d.png', m, centerX, centerY);
             saveas(gcf, fullfile(folderName, filename));
-            
+                       
             % Get the binary mask of the ROI
             roiMask = createMask(roi);
             
@@ -108,15 +109,16 @@ for m = 1:skipSlices:numFrames
             width = analysisResult(1);
             height = analysisResult(2);
             area = analysisResult(3);
+            pseudoFWHM = analysisResult(4);
             
             % Store the analysis results for the current ROI
             roiCounter = roiCounter + 1;
             roiWidths{roiCounter} = width;
             roiHeights{roiCounter} = height;
             roiAreas{roiCounter} = area;
+            roiPseudoFWHM{roiCounter} = pseudoFWHM;
             
             % Save the Radon transform figure
-            figure('Visible', 'off');
             imagesc(0:179, 1:size(R, 1), R);
             colormap(gca, 'hot');
             colorbar;
@@ -127,7 +129,6 @@ for m = 1:skipSlices:numFrames
             saveas(gcf, fullfile(folderName, filename));
             
             % Save the standard deviation figure
-            figure('Visible', 'off');
             plot(stdDev);
             xlabel('Theta');
             ylabel('Standard Deviation');
@@ -149,12 +150,20 @@ for m = 1:skipSlices:numFrames
     roiWidths = roiWidths(1:roiCounter);
     roiHeights = roiHeights(1:roiCounter);
     roiAreas = roiAreas(1:roiCounter);
+    roiPseudoFWHM = roiPseudoFWHM(1:roiCounter);
     
     % Store the analysis results for the current frame
     results(m).Width = roiWidths;
     results(m).Height = roiHeights;
     results(m).Area = roiAreas;
+    results(m).PseudoFWHM = roiPseudoFWHM;
 end
 
 % Save the analysis results
 save(fullfile(folderName, 'analysis_results.mat'), 'results');
+
+function pseudoFWHM = findPseudoFWHM(stdDev)
+    [~, ind1] = max(diff(stdDev)); % finds the first positive slope inflection point
+    [~, ind2] = min(diff(stdDev(ind1:end))); % finds the first negative slope inflection point after the first positive one
+    pseudoFWHM = ind2 - ind1 + 1; % calculates the pseudo FWHM
+end
