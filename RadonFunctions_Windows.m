@@ -1,7 +1,5 @@
-%INPUTS
-
 % FILE PATH
-files = "sample.tif";
+files = "wk8.tif";
 
 % SET ROI MOVEMENT STEP SIZE 
 stepSize = 100;
@@ -19,8 +17,6 @@ skipSlices = 50;
 % AREA RESITRICTION FROM LEFT AND BOTTOM EDGE
 buffer = 100;
 
-
-%CODE
 
 % Read TIFF file
 stack = tiffreadVolume(files);
@@ -42,7 +38,7 @@ drawROI = @(frame, centerX, centerY, radius) drawcircle('Center', [centerX, cent
 performRadonTransform = @(maskedFrame) radon(maskedFrame, linspace(0, 180, 180));
 
 % Function to calculate normalized standard deviation
-calculateStdDev = @(R) (std(R) - min(std(R))) / (max(std(R)-min(std(R))));
+calculateStdDev = @(R) (std(R) - min(std(R))) / (max(std(R))-min(std(R)));
 
 % Function to find the full width at half maximum (FWHM)
 findFWHM = @(stdDev) find(stdDev > max(stdDev) / 2, 1, 'last') - find(stdDev > max(stdDev) / 2, 1) + 1;
@@ -53,8 +49,16 @@ analyzeCurveFunction = @(stdDev) [findFWHM(stdDev), max(stdDev), trapz(stdDev)];
 % Determine the actual number of frames with available data
 actualNumFrames = ceil(numSlices / 3 / skipSlices);
 
+% Calculate the maximum number of ROIs
+maxNumROIs = floor(((size(stack, 1) - buffer - initialY) / stepSize + 1) * ((size(stack, 2) - buffer - initialX) / stepSize + 1));
+
+% Preallocate arrays for ROI-specific analysis results
+roiWidths = cell(1, maxNumROIs);
+roiHeights = cell(1, maxNumROIs);
+roiAreas = cell(1, maxNumROIs);
+
 % Initialize structural arrays to store analysis results
-results = struct('Width', {}, 'Height', {}, 'Area', {});
+results = struct('Width', roiWidths, 'Height', roiHeights, 'Area', roiAreas);
 
 % Iterate over each frame
 for m = 1:skipSlices:numFrames
@@ -69,17 +73,15 @@ for m = 1:skipSlices:numFrames
     centerX = initialX;
     centerY = initialY;
     
-    % Initialize arrays to store ROI-specific analysis results
-    roiWidths = {};
-    roiHeights = {};
-    roiAreas = {};
+    % Initialize counter for the number of ROIs
+    roiCounter = 0;
     
     % Iterate over y-direction
     while centerY + radius <= size(frame, 1) - buffer
         % Iterate over x-direction
         while centerX + radius <= size(frame, 2) - buffer
             % Display the image
-            figure;
+            figure('Visible', 'off');
             imshow(frame, []);
             
             % Create the ROI object
@@ -108,12 +110,13 @@ for m = 1:skipSlices:numFrames
             area = analysisResult(3);
             
             % Store the analysis results for the current ROI
-            roiWidths{end + 1} = width;
-            roiHeights{end + 1} = height;
-            roiAreas{end + 1} = area;
+            roiCounter = roiCounter + 1;
+            roiWidths{roiCounter} = width;
+            roiHeights{roiCounter} = height;
+            roiAreas{roiCounter} = area;
             
             % Save the Radon transform figure
-            figure;
+            figure('Visible', 'off');
             imagesc(0:179, 1:size(R, 1), R);
             colormap(gca, 'hot');
             colorbar;
@@ -124,7 +127,7 @@ for m = 1:skipSlices:numFrames
             saveas(gcf, fullfile(folderName, filename));
             
             % Save the standard deviation figure
-            figure;
+            figure('Visible', 'off');
             plot(stdDev);
             xlabel('Theta');
             ylabel('Standard Deviation');
@@ -132,8 +135,6 @@ for m = 1:skipSlices:numFrames
             filename = sprintf('std_deviation_slice%d_centerX%d_centerY%d.png', m, centerX, centerY);
             saveas(gcf, fullfile(folderName, filename));
             
-            % Close all figures
-            close all;  
             % Move to the next x position
             centerX = centerX + stepSize;
         end
@@ -143,6 +144,11 @@ for m = 1:skipSlices:numFrames
         % Move to the next y position
         centerY = centerY + stepSize;
     end
+    
+    % Trim empty cells from the analysis results
+    roiWidths = roiWidths(1:roiCounter);
+    roiHeights = roiHeights(1:roiCounter);
+    roiAreas = roiAreas(1:roiCounter);
     
     % Store the analysis results for the current frame
     results(m).Width = roiWidths;
