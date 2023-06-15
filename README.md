@@ -15,9 +15,15 @@
 # loaddata:
 - Access data from RadonFunctions (width, height, area under std dev curve)
 
-# plotdata:
+# boxplot_data:
 - Access data from RadonFunctions (width, height, area under std dev curve)
 - Plot boxplots for each data type
+- Excludes widths of 180 (inaccurate)
+
+# compare_data:
+- Access 2 sets of data from RadonFunctions (width, height, area under std dev curve)
+- Plot 2 boxplots for each data type representing each data set
+
 
 # FFTScript
 - Upload TIFF file
