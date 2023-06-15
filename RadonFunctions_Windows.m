@@ -1,22 +1,26 @@
 % FILE PATH
-files = "sample.tif";
+files = "wk8.tif";
 
 % SET ROI MOVEMENT STEP SIZE 
-stepSize = 100;
+stepSize = 15;
 
 % SET INITAL XY VALUES
-initialX = 200;
-initialY = 200;
+initialX = 160;
+initialY = 180;
 
-%SET RADIUS OF ROI
-radius = 100;
+% SET RADIUS OF ROI
+radius = 15;
 
 % SET NUMBER OF SLICES TO SKIP
-skipSlices = 50;
+skipSlices = 2;
 
 % AREA RESITRICTION FROM LEFT AND BOTTOM EDGE
-buffer_X = 100;
-buffer_Y = 200;
+buffer_X = 240;
+buffer_Y = 220;
+
+% START AND END SLICE
+startSlice = 13;
+endSlice = 23;
 
 % Read TIFF file
 stack = tiffreadVolume(files);
@@ -37,14 +41,14 @@ drawROI = @(frame, centerX, centerY, radius) drawcircle('Center', [centerX, cent
 % Function to perform Radon transform
 performRadonTransform = @(maskedFrame) radon(maskedFrame, linspace(0, 180, 180));
 
-% Function to calculate normalized standard deviation
-calculateStdDev = @(R) (std(R) - min(std(R))) / (max(std(R))-min(std(R)));
+% % Function to calculate normalized standard deviation
+% calculateStdDev = @(R) (std(R));
 
-% Function to find the full width at half maximum (FWHM)
-findFWHM = @(stdDev) find(stdDev > max(stdDev) / 2, 1, 'last') - find(stdDev > max(stdDev) / 2, 1) + 1;
+% % Function to calculate normalized standard deviation
+% calculateNormalizedStdDev = @(R) (std(R) - min(std(R))) / (max(std(R)) - min(std(R)));
 
 % Function to analyze the curve
-analyzeCurveFunction = @(stdDev) [findFWHM(stdDev), max(stdDev), trapz(stdDev), findPseudoFWHM(stdDev)];
+analyzeCurveFunction = @(stdDoubled) [findFWHM(stdDoubled), findPseudoFWHM(stdDoubled)];
 
 % Determine the actual number of frames with available data
 actualNumFrames = ceil(numSlices / 3 / skipSlices);
@@ -62,7 +66,7 @@ roiPseudoFWHM = cell(1, maxNumROIs);
 results = struct('Width', roiWidths, 'Height', roiHeights, 'Area', roiAreas, 'PseudoFWHM', roiPseudoFWHM);
 
 % Iterate over each frame
-for m = 1:skipSlices:numFrames
+for m = startSlice:skipSlices:endSlice
     disp(m)
     
     % Select the THG channel
@@ -102,14 +106,15 @@ for m = 1:skipSlices:numFrames
             R = performRadonTransform(maskedFrame);
             
             % Calculate standard deviation
-            stdDev = calculateStdDev(R);
+            stdDev = std(R);
+            normalizeStdDev = (stdDev - min(stdDev)) / (max(stdDev) - min(stdDev));
+            stdDoubled = [normalizeStdDev normalizeStdDev];
             
-            % Analyze the curve
-            analysisResult = analyzeCurveFunction(stdDev);
+            analysisResult = analyzeCurveFunction(stdDoubled);
             width = analysisResult(1);
-            height = analysisResult(2);
-            area = analysisResult(3);
-            pseudoFWHM = analysisResult(4);
+            height = max(stdDev);
+            area = trapz(stdDev);
+            pseudoFWHM = analysisResult(2);
             
             % Store the analysis results for the current ROI
             roiCounter = roiCounter + 1;
@@ -129,7 +134,7 @@ for m = 1:skipSlices:numFrames
             saveas(gcf, fullfile(folderName, filename));
             
             % Save the standard deviation figure
-            plot(stdDev);
+            plot(stdDoubled);
             xlabel('Theta');
             ylabel('Standard Deviation');
             title('Standard Deviation Magnitude per Theta');
@@ -159,11 +164,28 @@ for m = 1:skipSlices:numFrames
     results(m).PseudoFWHM = roiPseudoFWHM;
 end
 
+
 % Save the analysis results
 save(fullfile(folderName, 'analysis_results.mat'), 'results');
 
-function pseudoFWHM = findPseudoFWHM(stdDev)
-    [~, ind1] = max(diff(stdDev)); % finds the first positive slope inflection point
-    [~, ind2] = min(diff(stdDev(ind1:end))); % finds the first negative slope inflection point after the first positive one
-    pseudoFWHM = ind2 - ind1 + 1; % calculates the pseudo FWHM
+function fwhm = findFWHM(stdDoubled)
+    half_max = max(stdDoubled) / 2;
+
+    % Find the indices where the curve crosses the half-maximum threshold
+    indices = find(stdDoubled >= half_max);
+
+   
+    % Calculate the distance between the first and last crossing indices
+    fwhm = (indices(end) - indices(1) + 1) / 2;
+    
 end
+
+
+function pseudoFWHM = findPseudoFWHM(stdDoubled)
+    [~, ind1] = max(diff(stdDoubled)); % finds the first positive slope inflection point    
+    [~, ind2] = min(diff(stdDoubled(ind1:end))); % finds the first negative slope inflection point after the first positive one
+       
+    pseudoFWHM = ind2; % calculates the pseudo FWHM
+    
+end
+
