@@ -15,6 +15,10 @@
 # loaddata:
 - Access data from RadonFunctions (width, height, area under std dev curve)
 
+# plotdata:
+- Access data from RadonFunctions (width, height, area under std dev curve)
+- Plot boxplots for each data type
+
 # FFTScript
 - Upload TIFF file
 - Input appropriate channel and slice number
