@@ -2,13 +2,14 @@ files = "sample.tif";
 
 % Read TIFF file
 stack = tiffreadVolume(files(1:length(files)));
-numSlices = size(stack, 3); % number of channels
+numChan = size(stack, 3);
 
-% SELECT CHANNEL (uses 1st out of 3)
+% Select the channel
 ch1 = stack(:, :, 1:3:numChan-2);
 
-% SPECIFY SLICE NUMBER
-m = 21; % CHANGE!
+% Specify the slice number
+m = 21;
+
 if m > size(ch1, 3) % Make sure slice exists
     error('Invalid frame index.');
 end
@@ -23,6 +24,7 @@ radius = roi.Radius;
 roiMask = createMask(roi); % Get the binary mask of the ROI
 
 % Save the ROI
+roiImage = frame .* roiMask;
 imwrite(uint8(roiImage), 'roi_image.png');
 
 % Apply ROI mask
@@ -60,3 +62,34 @@ xlabel('Theta');
 ylabel('Standard Deviation');
 title('Standard Deviation Magnitude per Theta');
 saveas(gcf, 'std_deviation.png');
+
+% Width: Find the full width at half maximum (FWHM)
+halfMax = max(stdDev) / 2;
+aboveHalfMax = stdDev > halfMax;
+firstAboveHalfMax = find(aboveHalfMax, 1);
+lastAboveHalfMax = find(aboveHalfMax, 1, 'last');
+width = lastAboveHalfMax - firstAboveHalfMax;
+widthIndices = [firstAboveHalfMax, lastAboveHalfMax];
+
+% Height: Find the maximum standard deviation
+[height, heightIndex] = max(stdDev);
+
+% Area under the curve: Compute the integral of the standard deviation curve
+area = trapz(stdDev);
+
+% Display analysis results
+fprintf('Width: %.2f\n', width);
+fprintf('Width Indices: [%d, %d]\n', widthIndices(1), widthIndices(2));
+fprintf('Height: %.2f\n', height);
+fprintf('Height Index: %d\n', heightIndex);
+fprintf('Area under the curve: %.2f\n', area);
+
+% Pseudo FWHM
+doubleStdDev = [stdDev stdDev];
+[~, ind1] = max(diff(doubleStdDev)); % finds the first positive slope inflection point
+[~, ind2] = min(diff(doubleStdDev(ind1:end))); % finds the first negative slope inflection point after the first positive one
+pseudoFWHM = ind2;
+pseudoFWHMIndex = ind1 + ind2 - 1;
+
+fprintf('Pseudo FWHM: %.2f\n', pseudoFWHM);
+fprintf('Pseudo FWHM Indices: [%d, %d]\n', ind1, pseudoFWHMIndex);
