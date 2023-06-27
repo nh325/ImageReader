@@ -1,15 +1,14 @@
-files = "sample.tif";
+files = "228N_2L_wk8.tif";
 
 % Read TIFF file
 stack = tiffreadVolume(files(1:length(files)));
 numChan = size(stack, 3);
 
-% Select the channel
+% Select the THG channel
 ch1 = stack(:, :, 1:3:numChan-2);
 
 % Specify the slice number
 m = 21;
-
 if m > size(ch1, 3) % Make sure slice exists
     error('Invalid frame index.');
 end
@@ -22,6 +21,9 @@ roi = drawcircle;
 center = roi.Center;
 radius = roi.Radius;
 roiMask = createMask(roi); % Get the binary mask of the ROI
+
+% Calculate radius of ROI
+roiRadius = radius;
 
 % Save the ROI
 roiImage = frame .* roiMask;
@@ -55,27 +57,31 @@ saveas(gcf, 'radon_transform.png');
 raw_stdDev = std(R);
 stdDev = (raw_stdDev - min(raw_stdDev)) / (max(raw_stdDev)-min(raw_stdDev));
 
-% Display standard deviation magnitude per column
+% Smooth the standard deviation curve
+windowSize = 20;
+smoothed_stdDev = movmean(stdDev, windowSize);
+
+% Display smoothed standard deviation magnitude per column
 figure;
-plot(stdDev);
+plot(smoothed_stdDev);
 xlabel('Theta');
-ylabel('Standard Deviation');
-title('Standard Deviation Magnitude per Theta');
-saveas(gcf, 'std_deviation.png');
+ylabel('Smoothed Standard Deviation');
+title('Smoothed Standard Deviation Magnitude per Theta');
+saveas(gcf, 'smoothed_std_deviation.png');
 
 % Width: Find the full width at half maximum (FWHM)
-halfMax = max(stdDev) / 2;
-aboveHalfMax = stdDev > halfMax;
+halfMax = max(smoothed_stdDev) / 2;
+aboveHalfMax = smoothed_stdDev > halfMax;
 firstAboveHalfMax = find(aboveHalfMax, 1);
 lastAboveHalfMax = find(aboveHalfMax, 1, 'last');
 width = lastAboveHalfMax - firstAboveHalfMax;
 widthIndices = [firstAboveHalfMax, lastAboveHalfMax];
 
 % Height: Find the maximum standard deviation
-[height, heightIndex] = max(stdDev);
+[height, heightIndex] = max(smoothed_stdDev);
 
 % Area under the curve: Compute the integral of the standard deviation curve
-area = trapz(stdDev);
+area = trapz(smoothed_stdDev);
 
 % Display analysis results
 fprintf('Width: %.2f\n', width);
@@ -85,7 +91,7 @@ fprintf('Height Index: %d\n', heightIndex);
 fprintf('Area under the curve: %.2f\n', area);
 
 % Pseudo FWHM
-doubleStdDev = [stdDev stdDev];
+doubleStdDev = [smoothed_stdDev smoothed_stdDev];
 [~, ind1] = max(diff(doubleStdDev)); % finds the first positive slope inflection point
 [~, ind2] = min(diff(doubleStdDev(ind1:end))); % finds the first negative slope inflection point after the first positive one
 pseudoFWHM = ind2;
@@ -93,3 +99,12 @@ pseudoFWHMIndex = ind1 + ind2 - 1;
 
 fprintf('Pseudo FWHM: %.2f\n', pseudoFWHM);
 fprintf('Pseudo FWHM Indices: [%d, %d]\n', ind1, pseudoFWHMIndex);
+
+% Calculate centroid of the smoothed standard deviation curve
+theta_centroid = linspace(0, 180, length(smoothed_stdDev));
+centroid = sum(theta_centroid .* smoothed_stdDev) / sum(smoothed_stdDev);
+
+fprintf('Centroid: %.2f\n', centroid);
+
+% Display radius of ROI
+fprintf('ROI Radius: %.2f\n', roiRadius);
